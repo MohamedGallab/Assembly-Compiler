@@ -88,7 +88,7 @@ public class Processor {
 		return decodedInstruction;
 	}
 
-	public void execute(int[] decodedInstruction) {
+	public boolean execute(int[] decodedInstruction) {
 		SREG = 0;
 		byte R1 = (byte) decodedInstruction[1];
 		byte R2 = (byte) decodedInstruction[2];
@@ -179,13 +179,13 @@ public class Processor {
 		case 4:
 			if (R1 == 0) {
 				System.out.println("Old PC value: " + PC);
-				PC += SignedIMM;
+				PC += SignedIMM - 1;
 				System.out.println("New PC value: " + PC);
 
 			}
 			System.out.println("------------------------------------------");
-
-			// AND
+			return true;
+		// AND
 		case 5:
 			result = (byte) (R1 & R2);
 
@@ -217,7 +217,7 @@ public class Processor {
 			PC = (short) (((R1 << 8) + R2) - 1);
 			System.out.println("New PC value: " + PC);
 			System.out.println("------------------------------------------");
-
+			return true;
 			// SLC
 		case 8:
 			result = (byte) (R1 << UnSignedIMM | R1 >>> 8 - UnSignedIMM);
@@ -255,21 +255,24 @@ public class Processor {
 			dataMemory[UnSignedIMM] = R1;
 			System.out.println("New Memory Cell " + UnSignedIMM + " value: " + dataMemory[UnSignedIMM]);
 			System.out.println("------------------------------------------");
+			return false;
 		}
 		System.out.println("Old R1 value: " + oldR1);
 		System.out.println("Old SREG value: " + oldSREG);
 		System.out.println("New R1 value: " + registers[R1Address]);
 		System.out.println("New SREG value: " + Integer.toBinaryString(SREG));
 		System.out.println("------------------------------------------");
+		return false;
 	}
 
 	public void run() {
 		Short fetchedInstruction = null;
 		int[] decodedInstruction = null;
-		short oldPC = PC;
-		for (Short instruction : instructionMemory) {
-
-			if (instruction == null && fetchedInstruction == null && decodedInstruction == null) {
+		short oldPC;
+		while (true) {
+			boolean isJumped = false;
+			oldPC = PC;
+			if (instructionMemory[PC] == null && fetchedInstruction == null && decodedInstruction == null) {
 				return;
 			}
 			System.out.println("clock: " + cycles++);
@@ -278,7 +281,7 @@ public class Processor {
 			System.out.println("	" + "Input: " + Arrays.toString(decodedInstruction));
 			if (decodedInstruction != null) {
 				System.out.println("	" + "Output: ");
-				execute(decodedInstruction);
+				isJumped = execute(decodedInstruction);
 				decodedInstruction = null;
 			}
 			short newPC = PC;
@@ -307,8 +310,8 @@ public class Processor {
 			System.out.println();
 			System.out.println();
 			System.out.println();
-			if (newPC + 1 != PC) {
-				PC = (short) (newPC + 1);
+			if (isJumped) {
+				PC = newPC;
 				fetchedInstruction = null;
 				decodedInstruction = null;
 			}
@@ -324,7 +327,7 @@ public class Processor {
 
 		Processor processor = new Processor();
 		try {
-			processor.parse("test2.txt");
+			processor.parse("test.txt");
 		}
 		catch (IOException e) {
 			System.out.println("Wrong path");
