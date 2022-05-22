@@ -75,21 +75,20 @@ public class Processor {
 	public int[] decode(short instruction) {
 		int[] decodedInstruction = new int[7];
 
-		decodedInstruction[0] = (instruction & 0b1111000000000000) >> 12;	// opcode			
-		decodedInstruction[1] = registers[(instruction & 0b0000111111000000) >> 6];	// r1 value
-		decodedInstruction[2] = registers[instruction & 0b0000000000111111];	// r2 value
-		decodedInstruction[3] = (short) (instruction & 0b0000000000111111);	// imm
-		decodedInstruction[4] = (short) (instruction & 0b0000000000111111);	// signedImmediate
-		if(((instruction & 32) >> 5) == 1)
+		decodedInstruction[0] = (instruction & 0b1111000000000000) >> 12; // opcode
+		decodedInstruction[1] = registers[(instruction & 0b0000111111000000) >> 6]; // r1 value
+		decodedInstruction[2] = registers[instruction & 0b0000000000111111]; // r2 value
+		decodedInstruction[3] = (short) (instruction & 0b0000000000111111); // imm
+		decodedInstruction[4] = (short) (instruction & 0b0000000000111111); // signedImmediate
+		if (((instruction & 32) >> 5) == 1)
 			decodedInstruction[4] = (short) ((instruction & 0b0000000000111111) - 64);
-		decodedInstruction[5] = (instruction & 0b0000111111000000) >> 6;	// r1 address
-		decodedInstruction[6] = instruction & 0b0000000000111111;			// r2 address
-		
+		decodedInstruction[5] = (instruction & 0b0000111111000000) >> 6; // r1 address
+		decodedInstruction[6] = instruction & 0b0000000000111111; // r2 address
 
 		return decodedInstruction;
 	}
 
-	public boolean execute(int[] decodedInstruction) {
+	public void execute(int[] decodedInstruction) {
 		SREG = 0;
 		byte R1 = (byte) decodedInstruction[1];
 		byte R2 = (byte) decodedInstruction[2];
@@ -97,8 +96,7 @@ public class Processor {
 		int SignedIMM = decodedInstruction[4];
 		int R1Address = decodedInstruction[5];
 		int R2Address = decodedInstruction[6];
-		
-		
+
 		byte result = 0;
 		String oldR1 = registers[R1Address] + "";
 		String oldSREG = Integer.toBinaryString(SREG);
@@ -110,9 +108,9 @@ public class Processor {
 		// ADD
 		case 0:
 			result = (byte) (R1 + R2);
-			
+
 			// C
-			if (((Byte.toUnsignedInt(R1) + Byte.toUnsignedInt(R2))&0b100000000) == 0b100000000) {
+			if (((Byte.toUnsignedInt(R1) + Byte.toUnsignedInt(R2)) & 0b100000000) == 0b100000000) {
 				SREG |= (1 << 4);
 			}
 			// V
@@ -138,7 +136,7 @@ public class Processor {
 		// SUB
 		case 1:
 			result = (byte) (R1 - R2);
-			
+
 			// V
 			if (R1 >= 0 && R2 < 0) {
 				if ((byte) (result) < 0)
@@ -162,7 +160,7 @@ public class Processor {
 		// MUL
 		case 2:
 			result = (byte) (R1 * R2);
-			
+
 			// N
 			if (result < 0)
 				SREG |= (1 << 2);
@@ -181,17 +179,16 @@ public class Processor {
 		case 4:
 			if (R1 == 0) {
 				System.out.println("Old PC value: " + PC);
-				PC += 1 + SignedIMM;
+				PC += SignedIMM;
 				System.out.println("New PC value: " + PC);
 
 			}
 			System.out.println("------------------------------------------");
-			return true;
 
-		// AND
+			// AND
 		case 5:
 			result = (byte) (R1 & R2);
-			
+
 			// N
 			if (result < 0)
 				SREG |= (1 << 2);
@@ -204,7 +201,7 @@ public class Processor {
 		// OR
 		case 6:
 			result = (byte) (R1 | R2);
-			
+
 			// N
 			if (result < 0)
 				SREG |= (1 << 2);
@@ -217,15 +214,14 @@ public class Processor {
 		// JR
 		case 7:
 			System.out.println("Old PC value: " + PC);
-			PC = (short) (R1 << 8 + R2);
+			PC = (short) (((R1 << 8) + R2) - 1);
 			System.out.println("New PC value: " + PC);
 			System.out.println("------------------------------------------");
-			return true;
 
-		// SLC
+			// SLC
 		case 8:
 			result = (byte) (R1 << UnSignedIMM | R1 >>> 8 - UnSignedIMM);
-			
+
 			// N
 			if (result < 0)
 				SREG |= (1 << 2);
@@ -238,7 +234,7 @@ public class Processor {
 		// SRC
 		case 9:
 			result = (byte) (R1 >>> UnSignedIMM | R1 << 8 - UnSignedIMM);
-			
+
 			// N
 			if (result < 0)
 				SREG |= (1 << 2);
@@ -259,20 +255,18 @@ public class Processor {
 			dataMemory[UnSignedIMM] = R1;
 			System.out.println("New Memory Cell " + UnSignedIMM + " value: " + dataMemory[UnSignedIMM]);
 			System.out.println("------------------------------------------");
-			return false;
 		}
 		System.out.println("Old R1 value: " + oldR1);
 		System.out.println("Old SREG value: " + oldSREG);
 		System.out.println("New R1 value: " + registers[R1Address]);
 		System.out.println("New SREG value: " + Integer.toBinaryString(SREG));
 		System.out.println("------------------------------------------");
-		return false;
 	}
 
 	public void run() {
 		Short fetchedInstruction = null;
 		int[] decodedInstruction = null;
-		boolean isJumped = false;
+		short oldPC = PC;
 		for (Short instruction : instructionMemory) {
 
 			if (instruction == null && fetchedInstruction == null && decodedInstruction == null) {
@@ -284,10 +278,11 @@ public class Processor {
 			System.out.println("	" + "Input: " + Arrays.toString(decodedInstruction));
 			if (decodedInstruction != null) {
 				System.out.println("	" + "Output: ");
-				isJumped = execute(decodedInstruction);
+				execute(decodedInstruction);
 				decodedInstruction = null;
 			}
-
+			short newPC = PC;
+			PC = oldPC;
 			System.out.println();
 			System.out.println("Decode Stage:");
 			System.out.println("	" + "Input: " + fetchedInstruction);
@@ -312,8 +307,8 @@ public class Processor {
 			System.out.println();
 			System.out.println();
 			System.out.println();
-			if(isJumped)
-			{
+			if (newPC + 1 != PC) {
+				PC = (short) (newPC + 1);
 				fetchedInstruction = null;
 				decodedInstruction = null;
 			}
@@ -335,8 +330,6 @@ public class Processor {
 			System.out.println("Wrong path");
 		}
 		processor.run();
-		
-		
 
 //		for (String x : processor.instructionMemory)
 //			if (x != null) {
