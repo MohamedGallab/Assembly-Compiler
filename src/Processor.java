@@ -214,13 +214,14 @@ public class Processor {
 		// JR
 		case 7:
 			System.out.println("Old PC value: " + PC);
-			PC = (short) (((R1 << 8) + R2) - 1);
+			PC = (short) ((R1 << 8) + R2);
 			System.out.println("New PC value: " + PC);
 			System.out.println("------------------------------------------");
 			return true;
-			// SLC
+			
+		// SLC
 		case 8:
-			result = (byte) (R1 << UnSignedIMM | R1 >>> 8 - UnSignedIMM);
+			result = (byte) ((R1 << (UnSignedIMM%8)) | (R1 >>> 8 - (UnSignedIMM%8)));
 
 			// N
 			if (result < 0)
@@ -233,7 +234,7 @@ public class Processor {
 
 		// SRC
 		case 9:
-			result = (byte) (R1 >>> UnSignedIMM | R1 << 8 - UnSignedIMM);
+			result = (byte) ((R1 >>> (UnSignedIMM%8)) | (R1 << 8 - (UnSignedIMM%8)));
 
 			// N
 			if (result < 0)
