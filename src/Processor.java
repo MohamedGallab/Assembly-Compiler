@@ -380,21 +380,21 @@ public class Processor {
 
 			System.out.println();
 
-			System.out.print("Registers 		: ");
-			for (int i = 0; i < 10; i++) {
-				System.out.print(registers[i] + ", ");
-			}
-			System.out.println();
-			System.out.print("Data Memory		: ");
-			for (int i = 0; i < 10; i++) {
-				System.out.print(dataMemory[i] + ", ");
-			}
-			System.out.println();
-			System.out.print("Instruction Memory	: ");
-			for (int i = 0; i < 10; i++) {
-				System.out.print(instructionMemory[i] + ", ");
-			}
-			System.out.println();
+//			System.out.print("Registers 		: ");
+//			for (int i = 0; i < 10; i++) {
+//				System.out.print(registers[i] + ", ");
+//			}
+//			System.out.println();
+//			System.out.print("Data Memory		: ");
+//			for (int i = 0; i < 10; i++) {
+//				System.out.print(dataMemory[i] + ", ");
+//			}
+//			System.out.println();
+//			System.out.print("Instruction Memory	: ");
+//			for (int i = 0; i < 10; i++) {
+//				System.out.print(instructionMemory[i] + ", ");
+//			}
+//			System.out.println();
 
 			System.out.println();
 			System.out.println();
