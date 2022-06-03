@@ -216,14 +216,15 @@ public class Processor {
 
 		// BEQZ
 		case 4:
+			boolean isJumped = false;
+			System.out.println("Old PC value: " + PC);
 			if (R1 == 0) {
-				System.out.println("Old PC value: " + PC);
 				PC += SignedIMM - 1;
-				System.out.println("New PC value: " + PC);
-
+				isJumped = true;
 			}
+			System.out.println("New PC value: " + PC);
 			System.out.println("------------------------------------------");
-			return true;
+			return isJumped;
 		// AND
 		case 5:
 			result = (byte) (R1 & R2);
@@ -332,6 +333,9 @@ public class Processor {
 		int[] decodedInstruction = null;
 		short oldPC;
 		while (true) {
+//			if (cycles == 15) {
+//				break;
+//			}
 			boolean isJumped = false;
 			oldPC = PC;
 			if (instructionMemory[PC] == null && fetchedInstruction == null && decodedInstruction == null) {
@@ -376,9 +380,21 @@ public class Processor {
 
 			System.out.println();
 
-//			System.out.println("Registers 		: " + Arrays.toString(registers));
-//			System.out.println("Data Memory		: " + Arrays.toString(dataMemory));
-//			System.out.println("Instruction Memory	: " + Arrays.toString(instructionMemory));
+			System.out.print("Registers 		: ");
+			for (int i = 0; i < 10; i++) {
+				System.out.print(registers[i] + ", ");
+			}
+			System.out.println();
+			System.out.print("Data Memory		: ");
+			for (int i = 0; i < 10; i++) {
+				System.out.print(dataMemory[i] + ", ");
+			}
+			System.out.println();
+			System.out.print("Instruction Memory	: ");
+			for (int i = 0; i < 10; i++) {
+				System.out.print(instructionMemory[i] + ", ");
+			}
+			System.out.println();
 
 			System.out.println();
 			System.out.println();
@@ -401,7 +417,7 @@ public class Processor {
 
 		Processor processor = new Processor();
 		try {
-			processor.parse("test2.txt");
+			processor.parse("test.txt");
 		}
 		catch (IOException e) {
 			System.out.println("Wrong path");
