@@ -269,7 +269,7 @@ public class Processor {
 
 		// SLC
 		case 8:
-			result = (byte) ((R1 << (UnSignedIMM % 8)) | (R1 >>> 8 - (UnSignedIMM % 8)));
+			result = (byte) (((R1&0xff) << (UnSignedIMM % 8)) | ((R1&0xff) >>> 8 - (UnSignedIMM % 8)));
 
 			// N
 			if (result < 0)
@@ -286,7 +286,7 @@ public class Processor {
 
 		// SRC
 		case 9:
-			result = (byte) ((R1 >>> (UnSignedIMM % 8)) | (R1 << 8 - (UnSignedIMM % 8)));
+			result = (byte) (((R1&0xff) >>> (UnSignedIMM % 8)) | ((R1&0xff) << 8 - (UnSignedIMM % 8)));
 
 			// N
 			if (result < 0)
@@ -417,7 +417,7 @@ public class Processor {
 
 		Processor processor = new Processor();
 		try {
-			processor.parse("test.txt");
+			processor.parse("test 3.txt");
 		}
 		catch (IOException e) {
 			System.out.println("Wrong path");
