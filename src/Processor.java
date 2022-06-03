@@ -3,12 +3,14 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 
 public class Processor {
 	Short[] instructionMemory = new Short[1024];
 	byte[] dataMemory = new byte[2048];
 	byte[] registers = new byte[64];
+	HashMap<Short, String> printInstuction = new HashMap<>();
 	byte SREG;
 	short PC = 0;
 	int cycles = 1;
@@ -62,8 +64,17 @@ public class Processor {
 				instructionMemory[parserIterator] = (short) (11 << 12);
 				break;
 			}
-			instructionMemory[parserIterator] = (short) (instructionMemory[parserIterator]
-					+ ((Integer.parseInt(currentLine[1]) & 0x3f) << 6) + (Integer.parseInt(currentLine[2]) & 0x3f));
+			if (currentLine[2].contains("R")) {
+				instructionMemory[parserIterator] = (short) (instructionMemory[parserIterator]
+						+ ((Integer.parseInt(currentLine[1].substring(1)) & 0x3f) << 6)
+						+ (Integer.parseInt(currentLine[2].substring(1)) & 0x3f));
+			}
+			else {
+				instructionMemory[parserIterator] = (short) (instructionMemory[parserIterator]
+						+ ((Integer.parseInt(currentLine[1].substring(1)) & 0x3f) << 6)
+						+ (Integer.parseInt(currentLine[2]) & 0x3f));
+			}
+			printInstuction.put(instructionMemory[parserIterator], st);
 			parserIterator++;
 		}
 	}
@@ -88,8 +99,18 @@ public class Processor {
 		return decodedInstruction;
 	}
 
+	public String printDecodedInstruction(int[] decodedInstruction) {
+		if (decodedInstruction == null) {
+			return null;
+		}
+		return "OP code = " + decodedInstruction[0] + " / R1 = " + decodedInstruction[1] + " / R2 = "
+				+ decodedInstruction[2] + " / UnSignedIMM = " + decodedInstruction[3] + " / SignedIMM = "
+				+ decodedInstruction[4] + " / R1Address = " + decodedInstruction[5] + " / R2Address = "
+				+ decodedInstruction[6];
+	}
+
 	public boolean execute(int[] decodedInstruction) {
-		SREG = 0;
+
 		byte R1 = (byte) decodedInstruction[1];
 		byte R2 = (byte) decodedInstruction[2];
 		int UnSignedIMM = decodedInstruction[3];
@@ -99,7 +120,7 @@ public class Processor {
 
 		byte result = 0;
 		String oldR1 = registers[R1Address] + "";
-		String oldSREG = Integer.toBinaryString(SREG);
+		byte oldSREG = SREG;
 		System.out.println("------------------------------------------");
 		// 7 6 5 4 3 2 1 0
 		// 0 0 0 C V N S Z
@@ -113,6 +134,8 @@ public class Processor {
 			if (((Byte.toUnsignedInt(R1) + Byte.toUnsignedInt(R2)) & 0b100000000) == 0b100000000) {
 				SREG |= (1 << 4);
 			}
+			else
+				SREG &= ~(1 << 4);
 			// V
 			if (R1 >= 0 && R2 >= 0) {
 				if ((byte) (result) < 0)
@@ -122,14 +145,20 @@ public class Processor {
 				if ((byte) (result) >= 0)
 					SREG |= (1 << 3);
 			}
+			else
+				SREG &= ~(1 << 3);
 			// N
 			if (result < 0)
 				SREG |= (1 << 2);
+			else
+				SREG &= ~(1 << 2);
 			// S
 			SREG |= (((SREG >> 2) & 1) ^ ((SREG >> 3) & 1)) << 1;
 			// Z
 			if (result == 0)
 				SREG |= 1;
+			else
+				SREG &= ~1;
 			registers[R1Address] = result;
 			break;
 
@@ -146,14 +175,20 @@ public class Processor {
 				if ((byte) (result) >= 0)
 					SREG |= (1 << 3);
 			}
+			else
+				SREG &= ~(1 << 3);
 			// N
 			if (result < 0)
 				SREG |= (1 << 2);
+			else
+				SREG &= ~(1 << 2);
 			// S
 			SREG |= (((SREG >> 2) & 1) ^ ((SREG >> 3) & 1)) << 1;
 			// Z
 			if (result == 0)
 				SREG |= 1;
+			else
+				SREG &= ~1;
 			registers[R1Address] = result;
 			break;
 
@@ -164,9 +199,13 @@ public class Processor {
 			// N
 			if (result < 0)
 				SREG |= (1 << 2);
+			else
+				SREG &= ~(1 << 2);
 			// Z
 			if (result == 0)
 				SREG |= 1;
+			else
+				SREG &= ~1;
 			registers[R1Address] = result;
 			break;
 
@@ -192,9 +231,13 @@ public class Processor {
 			// N
 			if (result < 0)
 				SREG |= (1 << 2);
+			else
+				SREG &= ~(1 << 2);
 			// Z
 			if (result == 0)
 				SREG |= 1;
+			else
+				SREG &= ~1;
 			registers[R1Address] = result;
 			break;
 
@@ -205,9 +248,13 @@ public class Processor {
 			// N
 			if (result < 0)
 				SREG |= (1 << 2);
+			else
+				SREG &= ~(1 << 2);
 			// Z
 			if (result == 0)
 				SREG |= 1;
+			else
+				SREG &= ~1;
 			registers[R1Address] = result;
 			break;
 
@@ -218,30 +265,38 @@ public class Processor {
 			System.out.println("New PC value: " + PC);
 			System.out.println("------------------------------------------");
 			return true;
-			
+
 		// SLC
 		case 8:
-			result = (byte) ((R1 << (UnSignedIMM%8)) | (R1 >>> 8 - (UnSignedIMM%8)));
+			result = (byte) ((R1 << (UnSignedIMM % 8)) | (R1 >>> 8 - (UnSignedIMM % 8)));
 
 			// N
 			if (result < 0)
 				SREG |= (1 << 2);
+			else
+				SREG &= ~(1 << 2);
 			// Z
 			if (result == 0)
 				SREG |= 1;
+			else
+				SREG &= ~1;
 			registers[R1Address] = result;
 			break;
 
 		// SRC
 		case 9:
-			result = (byte) ((R1 >>> (UnSignedIMM%8)) | (R1 << 8 - (UnSignedIMM%8)));
+			result = (byte) ((R1 >>> (UnSignedIMM % 8)) | (R1 << 8 - (UnSignedIMM % 8)));
 
 			// N
 			if (result < 0)
 				SREG |= (1 << 2);
+			else
+				SREG &= ~(1 << 2);
 			// Z
 			if (result == 0)
 				SREG |= 1;
+			else
+				SREG &= ~1;
 			registers[R1Address] = result;
 			break;
 
@@ -258,10 +313,16 @@ public class Processor {
 			System.out.println("------------------------------------------");
 			return false;
 		}
+
 		System.out.println("Old R1 value: " + oldR1);
-		System.out.println("Old SREG value: " + oldSREG);
+		System.out.println("Old SREG value: " + Integer.toBinaryString(oldSREG));
+		System.out.println("	C: " + getBit(oldSREG, 4) + " / V: " + getBit(oldSREG, 3) + " / N: "
+				+ getBit(oldSREG, 2) + " / S: " + getBit(oldSREG, 1) + " / Z: " + getBit(oldSREG, 0));
+		System.out.println();
 		System.out.println("New R1 value: " + registers[R1Address]);
 		System.out.println("New SREG value: " + Integer.toBinaryString(SREG));
+		System.out.println("	C: " + getBit(SREG, 4) + " / V: " + getBit(SREG, 3) + " / N: " + getBit(SREG, 2)
+				+ " / S: " + getBit(SREG, 1) + " / Z: " + getBit(SREG, 0));
 		System.out.println("------------------------------------------");
 		return false;
 	}
@@ -274,12 +335,21 @@ public class Processor {
 			boolean isJumped = false;
 			oldPC = PC;
 			if (instructionMemory[PC] == null && fetchedInstruction == null && decodedInstruction == null) {
+				System.out.println("Registers 		: " + Arrays.toString(registers));
+				System.out.println("Data Memory		: " + Arrays.toString(dataMemory));
+				System.out.println("Instruction Memory	: " + Arrays.toString(instructionMemory));
 				return;
 			}
 			System.out.println("clock: " + cycles++);
 			System.out.println();
 			System.out.println("Execute Stage:");
-			System.out.println("	" + "Input: " + Arrays.toString(decodedInstruction));
+			if (decodedInstruction != null)
+				System.out.println("	" + "Insturction: " + printInstuction.get((short) ((decodedInstruction[0] << 12)
+						+ (decodedInstruction[5] << 6) + decodedInstruction[6])));
+			else
+				System.out.println("	" + "Insturction: null");
+			System.out.println("	" + "Input: " + printDecodedInstruction(decodedInstruction));
+
 			if (decodedInstruction != null) {
 				System.out.println("	" + "Output: ");
 				isJumped = execute(decodedInstruction);
@@ -289,23 +359,26 @@ public class Processor {
 			PC = oldPC;
 			System.out.println();
 			System.out.println("Decode Stage:");
+			System.out.println("	" + "Insturction: " + printInstuction.get(fetchedInstruction));
 			System.out.println("	" + "Input: " + fetchedInstruction);
 			if (fetchedInstruction != null) {
+
 				decodedInstruction = decode(fetchedInstruction);
 				fetchedInstruction = null;
 			}
-			System.out.println("	" + "Output: " + Arrays.toString(decodedInstruction));
+			System.out.println("	" + "Output: " + printDecodedInstruction(decodedInstruction));
 			System.out.println();
 			System.out.println("Fetch Stage:");
+			System.out.println("	" + "Insturction: " + printInstuction.get(instructionMemory[PC]));
 			System.out.println("	" + "Input: " + PC);
 			fetchedInstruction = fetch();
 			System.out.println("	" + "Output: " + fetchedInstruction);
 
 			System.out.println();
 
-			System.out.println("Registers 		: " + Arrays.toString(registers));
-			System.out.println("Data Memory		: " + Arrays.toString(dataMemory));
-			System.out.println("Instruction Memory	: " + Arrays.toString(instructionMemory));
+//			System.out.println("Registers 		: " + Arrays.toString(registers));
+//			System.out.println("Data Memory		: " + Arrays.toString(dataMemory));
+//			System.out.println("Instruction Memory	: " + Arrays.toString(instructionMemory));
 
 			System.out.println();
 			System.out.println();
@@ -320,7 +393,7 @@ public class Processor {
 
 	}
 
-	public int getBit(byte b, int position) {
+	public int getBit(short b, int position) {
 		return (b >> position) & 1;
 	}
 
@@ -328,7 +401,7 @@ public class Processor {
 
 		Processor processor = new Processor();
 		try {
-			processor.parse("test.txt");
+			processor.parse("test2.txt");
 		}
 		catch (IOException e) {
 			System.out.println("Wrong path");
