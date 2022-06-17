@@ -117,7 +117,7 @@ public class Processor {
 		int SignedIMM = decodedInstruction[4];
 		int R1Address = decodedInstruction[5];
 		int R2Address = decodedInstruction[6];
-
+		//fix S flag
 		byte result = 0;
 		String oldR1 = registers[R1Address] + "";
 		byte oldSREG = SREG;
